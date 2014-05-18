@@ -3,6 +3,11 @@
 
 # <codecell>
 
+def log_console(string_message):
+    print(string_message)
+
+# <codecell>
+
 class MidiMessage:
     MIDI_NOTE_ON = 1
     MIDI_NOTE_OFF = 2
@@ -113,7 +118,7 @@ class MidiClock:
             self.bar_delegate()
             self.tick = 0
             self.isPlaying = True
-            print("Got clock!..")
+            log_console("Got clock!..")
         elif message.msgType == MidiMessage.MIDI_CONTINUE:
             self.isPlaying = True
         elif message.msgType == MidiMessage.MIDI_STOP:
@@ -160,21 +165,21 @@ class Sequencer:
         if time in self.sequence:
             # append the new number to the existing array at this slot
             self.sequence[time].append(message)
-            #print ("note added 2 tick: " + str(time) + " msg: " +   str(message))
+            #log_console("note added 2 tick: " + str(time) + " msg: " +   str(message))
         else:
             #add new list, so may be there are more than one note on tick
             msgs = [message]
             self.sequence[time] = msgs
-            #print ("note added tick: " + str(time) + " msg: " +   str(message))
+            #log_console ("note added tick: " + str(time) + " msg: " +   str(message))
     
     def appendPending(self, msg_list):
         for msg in msg_list:
             self.appendMessage(msg.time, msg)
-            print("appended pending at: " + str(msg.time))
+            log_console("appended pending at: " + str(msg.time))
         del msg_list[:]
             
     def processInput(self, message):
-        print ("got note: " + str(message) + " clock: " + str(self.clock))
+        #log_console ("got note: " + str(message) + " clock: " + str(self.clock))
         if(self.state == Sequencer.STATE_REC ) or (self.state == Sequencer.STATE_WAITING_FOR_PLAY_AFTER_REC):
             time = self.clock - self.recStart
             self.appendMessage(time, message)
@@ -187,10 +192,10 @@ class Sequencer:
                 self.pending_start.append(message)
             elif(time == Sequencer.SYNC_THRESHOLD):
                 del self.pending_start[:]
-                print("pending_start cleared")
+                log_console("pending_start cleared")
             elif(time == (Sequencer.BAR_LENGTH_IN_TICKS - Sequencer.SYNC_THRESHOLD)):
                 del self.pending_end[:]
-                print("pending_end cleared")
+                log_console("pending_end cleared")
             elif (Sequencer.BAR_LENGTH_IN_TICKS - time) < (Sequencer.SYNC_THRESHOLD * 2):
                 message.time = 0
                 self.pending_end.append(message)
@@ -200,7 +205,7 @@ class Sequencer:
         
     def outputMessage(self, msg):
         os.write(self.outputFD, msg.toBytes())
-        #print("playing: " + str(msg))
+        #log_console("playing: " + str(msg))
     
     def reset_clock(self):
         self.clock = 0
@@ -215,24 +220,24 @@ class Sequencer:
                 self.sequence.clear()
                 self.appendPending(self.pending_end)
                 del self.pending_start[:]
-                print("rec started from sync, tick: " + str(self.clock))
+                log_console("rec started from sync, tick: " + str(self.clock))
             elif (self.state == Sequencer.STATE_WAITING_FOR_PLAY_AFTER_REC):
                 self.loopLen = self.clock - self.recStart
                 self.state = Sequencer.STATE_PLAY
-                print("rec stop, play started (sync), tick: " + str(self.clock) + " len: " + str(self.loopLen))
+                log_console("rec stop, play started (sync), tick: " + str(self.clock) + " len: " + str(self.loopLen))
             elif (self.state == Sequencer.STATE_WAITING_FOR_PLAY):
                 self.state = Sequencer.STATE_PLAY
-                print("play started (sync), tick: " + str(self.clock) + " len: " + str(self.loopLen))
+                log_console("play started (sync), tick: " + str(self.clock) + " len: " + str(self.loopLen))
             elif (self.state == Sequencer.STATE_WAITING_FOR_STOP): 
                 self.state = Sequencer.STATE_IDLE
-                print("stopped (sync) tick: " + str(self.clock))
+                log_console("stopped (sync) tick: " + str(self.clock))
                 
         if (self.state == Sequencer.STATE_PLAY) and (self.loopLen > 0):
             position = self.clock % self.loopLen
             if position in self.sequence:
                 for msg in self.sequence[position]:
                     self.outputMessage(msg) 
-                    print("playing seq at pos: " + str(position) + " clock: " + str(self.clock))
+                    #log_console("playing seq at pos: " + str(position) + " clock: " + str(self.clock))
                 
         self.clock = self.clock + 1
         
@@ -244,32 +249,33 @@ class Sequencer:
             self.sequence.clear()
             self.appendPending(self.pending_start)
             del self.pending_end[:]
-            print("rec started, clock: " + str(self.recStart))
+            log_console("rec started, clock: " + str(self.recStart))
         else:
             self.state = Sequencer.STATE_WAITING_FOR_REC
-            print("preparing for rec at: " + str(self.clock))
+            del self.pending_start[:]
+            log_console("preparing for rec at: " + str(self.clock))
 
     def handleStopRec(self):
         if(self.clock % Sequencer.BAR_LENGTH_IN_TICKS == 0):
             self.state = Sequencer.STATE_PLAY
             self.loopLen = self.clock - self.recStart
-            print("rec stopped, len: " + str(self.loopLen))
+            log_console("rec stopped, len: " + str(self.loopLen))
         else:
             self.state = Sequencer.STATE_WAITING_FOR_PLAY_AFTER_REC
-            print("preparing for stop rec at: " + str(self.clock))
+            log_console("preparing for stop rec at: " + str(self.clock))
         
         
     def handlePlay(self):
         if(self.clock % Sequencer.BAR_LENGTH_IN_TICKS == 0):
             self.state = Sequencer.STATE_PLAY
-            print("play started " + str(self.clock))
+            log_console("play started " + str(self.clock))
         else:
             self.state = Sequencer.STATE_WAITING_FOR_PLAY
-            print("preparing for play at: " + str(self.clock))
+            log_console("preparing for play at: " + str(self.clock))
     
     def handleStopPlay(self):
         self.state =  Sequencer.STATE_IDLE
-        print("we're idle at "  + str(self.clock))
+        log_console("we're idle at "  + str(self.clock))
     
     def toggleRec(self):
         if Sequencer.STATE_PLAY == self.state:
@@ -315,8 +321,8 @@ def devName(d_name):
 class MidiLooper:
     controllerDevice = devName("Interface")#"/dev/snd/midiC1D0" #rw controls
     hostDevice = devName("mio")#"/dev/snd/midiC2D0"       #r clock
-   # loopedDevice = devName("Y12") #"/dev/snd/midiC2D0"     #rw input, send clock
-   # playbackDevice = devName("Y12") #"/dev/snd/midiC2D0"   #w output
+    #loopedDevice = devName("Y12") #"/dev/snd/midiC2D0"     #rw input, send clock
+    #playbackDevice = devName("Y12") #"/dev/snd/midiC2D0"   #w output
     
     loopedDevice = devName("mio") #"/dev/snd/midiC2D0"     #rw input, send clock
     playbackDevice = devName("mio") #"/dev/snd/midiC2D0"   #w output
@@ -348,11 +354,11 @@ class MidiLooper:
         self.seq.reset_clock()
     
     def mainloop(self):
-        print ("devices:")
-        print ("controllerDevice: " + self.controllerDevice)
-        print ("hostDevice: " + self.hostDevice)
-        print ("loopedDevice: " + self.loopedDevice)
-        print ("playbackDevice: " + self.playbackDevice)
+        log_console ("devices:")
+        log_console ("controllerDevice: " + self.controllerDevice)
+        log_console ("hostDevice: " + self.hostDevice)
+        log_console ("loopedDevice: " + self.loopedDevice)
+        log_console ("playbackDevice: " + self.playbackDevice)
         
         #setting up interfaces
         self.controls = ControlsProcessor(self.togglePlay, self.toggleRec)
@@ -380,16 +386,16 @@ class MidiLooper:
                     if device == self.controllerFD:
                         data = bytearray(os.read(self.controllerFD, 3))
                         message = MidiMessage.createMessageFromBytearray(0, data)
-                        #print("ctl :" + str(message))
+                        #log_console("ctl :" + str(message))
                         if message.param1 == 0x40:
                             continuing = False
-                            print("stopping...")
+                            log_console("stopping...")
                         self.controls.processInput(message)
                         
                     elif device == self.loopedFD:
                         data = bytearray(os.read(self.loopedFD, 3))
                         message = MidiMessage.createMessageFromBytearray(self.clock.tick, data)
-                        #print("lpd :" + str(message));
+                        #log_console("lpd :" + str(message));
                        # if (message.msgType == MidiMessage.MIDI_TICK) or (message.msgType == MidiMessage.MIDI_START) or (message.msgType == MidiMessage.MIDI_CONTINUE) or (message.msgType == MidiMessage.MIDI_STOP):
                        #     self.clock.processInput(message)
                         if (message.msgType == MidiMessage.MIDI_NOTE_ON) or (message.msgType == MidiMessage.MIDI_NOTE_OFF):
@@ -398,7 +404,7 @@ class MidiLooper:
                     elif device == self.hostFD:
                         data = bytearray(os.read(self.hostFD, 3))
                         message = MidiMessage.createMessageFromBytearray(self.clock.tick, data)
-                        #print("host :" + str(message))
+                        #log_console("host :" + str(message))
                         
                         if (message.msgType == MidiMessage.MIDI_TICK) or (message.msgType == MidiMessage.MIDI_START) or (message.msgType == MidiMessage.MIDI_CONTINUE) or (message.msgType == MidiMessage.MIDI_STOP):
                             self.clock.processInput(message)
@@ -410,7 +416,7 @@ class MidiLooper:
         self.closeFile(self.hostFD)
         self.closeFile(self.loopedFD)
         self.closeFile(self.playbackFD) 
-        print ("cleaned...")
+        log_console ("cleaned...")
 
     def closeFile(self, desc):
         if not (desc is None):
@@ -428,4 +434,7 @@ class MidiLooper:
 
 lpr = MidiLooper()
 lpr.go()
+
+# <codecell>
+
 
