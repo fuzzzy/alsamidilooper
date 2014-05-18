@@ -315,11 +315,11 @@ def devName(d_name):
 class MidiLooper:
     controllerDevice = devName("Interface")#"/dev/snd/midiC1D0" #rw controls
     hostDevice = devName("mio")#"/dev/snd/midiC2D0"       #r clock
-    loopedDevice = devName("Y12") #"/dev/snd/midiC2D0"     #rw input, send clock
-    playbackDevice = devName("Y12") #"/dev/snd/midiC2D0"   #w output
+   # loopedDevice = devName("Y12") #"/dev/snd/midiC2D0"     #rw input, send clock
+   # playbackDevice = devName("Y12") #"/dev/snd/midiC2D0"   #w output
     
-    #loopedDevice = devName("mio") #"/dev/snd/midiC2D0"     #rw input, send clock
-    #playbackDevice = devName("mio") #"/dev/snd/midiC2D0"   #w output
+    loopedDevice = devName("mio") #"/dev/snd/midiC2D0"     #rw input, send clock
+    playbackDevice = devName("mio") #"/dev/snd/midiC2D0"   #w output
     
     controllerFD = None
     hostFD = None
